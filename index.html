@@ -4669,5 +4669,57 @@ function cleanFiscalDate(v){
 })();
 </script>
 
+
+<script id="jlmg-historico-otros-igual-resumen">
+(function(){
+  function aplicarOtrosResumenEnHistorico(){
+    if (typeof renderHistorico !== 'function' || typeof totalOtros !== 'function') return;
+    if (window.__JLMG_HISTORICO_OTROS_IGUAL_RESUMEN__) return;
+    window.__JLMG_HISTORICO_OTROS_IGUAL_RESUMEN__ = true;
+
+    const renderHistoricoOriginal = renderHistorico;
+
+    renderHistorico = function(){
+      renderHistoricoOriginal();
+
+      try {
+        const body = document.getElementById('historicoBody');
+        if (!body) return;
+
+        // EXACTAMENTE el mismo importe que usa Resumen:
+        const otrosResumen = totalOtros();
+
+        body.querySelectorAll('tr').forEach(tr => {
+          const celdaOtros = tr.children[4]; // columna "Otros" en Histórico
+          if (!celdaOtros) return;
+          celdaOtros.textContent = typeof eur === 'function'
+            ? eur(otrosResumen)
+            : Number(otrosResumen || 0).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+          celdaOtros.title = 'Mismo importe que la tarjeta Otros bienes del Resumen';
+        });
+      } catch(e) {
+        console.warn('No se pudo igualar Otros histórico con Resumen:', e);
+      }
+    };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', aplicarOtrosResumenEnHistorico);
+  } else {
+    aplicarOtrosResumenEnHistorico();
+  }
+
+  setTimeout(function(){
+    aplicarOtrosResumenEnHistorico();
+    try {
+      const sec = document.getElementById('sec-historico');
+      if (sec && sec.classList.contains('active') && typeof loadHistorico === 'function') {
+        loadHistorico();
+      }
+    } catch(e){}
+  }, 400);
+})();
+</script>
+
 </body>
 </html>
