@@ -1595,15 +1595,15 @@ textarea.form-input {
     </div>
     <div class="form-row">
       <label class="form-label">Número de participaciones</label>
-      <input class="form-input" id="fNum" type="number" placeholder="202">
+      <input class="form-input" id="fNum" type="text" inputmode="decimal" placeholder="202">
     </div>
     <div class="form-row">
       <label class="form-label">Coste total adquisición (€)</label>
-      <input class="form-input" id="fCost" type="number" placeholder="77696.35">
+      <input class="form-input" id="fCost" type="text" inputmode="decimal" placeholder="77696.35">
     </div>
     <div class="form-row">
       <label class="form-label">VL actual manual (€) <span style="color:var(--text3);font-size:11px">(si no hay ticker)</span></label>
-      <input class="form-input" id="fPriceManual" type="number" placeholder="395.28">
+      <input class="form-input" id="fPriceManual" type="text" inputmode="decimal" placeholder="395.28">
     </div>
     <div class="form-row">
       <label class="form-label">Valoración OCU</label>
@@ -2221,7 +2221,7 @@ const FUND_ONLINE_FIXES = [
   {isin:'IE00BH481053', ticker:'0P0001H4KQ', aliases:['GQG PARTNERS']},
   {isin:'LU1330191542', ticker:'0P00017U5M', aliases:['MAGALLANES']},
   {isin:'IE000JMRXFF8', ticker:'0P0001M5QY', aliases:['WELLINGTON ENDURING']},
-  {isin:'IE00BCC5G60', ticker:'0P0000TKZO', aliases:['VANGUARD PACIFIC EX-JAPAN']}
+  {isin:'IE00BGCC5G60', ticker:'0P0000TKZO', aliases:['VANGUARD PACIFIC EX-JAPAN']}
 ];
 
 function applyFundOnlineFixes(){
@@ -2303,7 +2303,7 @@ function applyIndexaDefinitivo(){
     'IE00BFPM9J74':'Vanguard Emerging Markets Stock Idx Inst+ EUR Acc — INDEXA',
     'IE00BFRTDD83':'Vanguard Global Small-Cap Index Inst Plus EUR Acc — INDEXA',
     'IE00BFPM9P35':'Vanguard Japan Stock Idx Inst Plus EUR Acc — INDEXA',
-    'IE00BCC5G60':'Vanguard Pacific Ex-Japan Stock Idx Inst + EUR Acc — INDEXA'
+    'IE00BGCC5G60':'Vanguard Pacific Ex-Japan Stock Idx Inst + EUR Acc — INDEXA'
   };
   DATA.fondos.forEach(f => {
     const isin = String(f.isin || '').toUpperCase();
@@ -2320,44 +2320,49 @@ function applyIndexaDefinitivoLimpio(){
   if(!DATA.fondos) DATA.fondos = [];
   if(!DATA.otros) DATA.otros = [];
 
-  // Quitar cualquier Indexa de Otros bienes para evitar duplicados.
+  // Quitar Indexa duplicado de Otros bienes, pero NO sobrescribir nunca los fondos existentes.
   DATA.otros = DATA.otros.filter(o => {
     const txt = (String(o.code||'') + ' ' + String(o.name||'') + ' ' + String(o.notes||'')).toUpperCase();
     return !(txt.includes('INDEXA') || txt.includes('PE5VZRGU') || txt.includes('QV9NAXTC') || txt.includes('BBI7LCHM') || txt.includes('4KX1CSY5'));
   });
 
-  // Quitar duplicados Indexa previos en fondos y reinsertar versión oficial.
-  DATA.fondos = DATA.fondos.filter(f => {
-    const id = String(f.id||'');
-    const n = String(f.name||'').toUpperCase();
-    return !(
-      id === 'f4a' || id === 'f4b' || id === 'f_emp_jl' || id === 'f_emp_maribel' ||
-      n.includes('INDEXA MÁS RENTABILIDAD ACCIONES PP') ||
-      n.includes('INDEXA MAS RENTABILIDAD ACCIONES PP') ||
-      n.includes('INDEXA EMPLEO AUTÓNOMOS') ||
-      n.includes('INDEXA EMPLEO AUTONOMOS')
-    );
-  });
-
-  DATA.fondos.push(
-    { id:'f4a', name:'Indexa Más Rentabilidad Acciones PP — JL (PE5VZRGU) — INDEXA', isin:'', ticker:'', num:4627.554666, cost:72147.47, valoracion:'—', price:25.56 },
-    { id:'f4b', name:'Indexa Más Rentabilidad Acciones PP — Maribel (QV9NAXTC) — INDEXA', isin:'', ticker:'', num:1755.250838, cost:27045.43, valoracion:'—', price:25.56 },
+  const defaults = [
+    { id:'f4a', name:'Indexa Más Rentabilidad Acciones PP — JL (PE5VZRGU) — INDEXA', isin:'', ticker:'', num:4627.554666, cost:72147.47, valoracion:'—', price:25.79 },
+    { id:'f4b', name:'Indexa Más Rentabilidad Acciones PP — Maribel (QV9NAXTC) — INDEXA', isin:'', ticker:'', num:1755.250838, cost:27045.43, valoracion:'—', price:25.79 },
     { id:'f_emp_jl', name:'Indexa Empleo Autónomos 100% Acciones — JLMG CAPITAL — INDEXA', isin:'', ticker:'', num:962.470285, cost:12057.10, valoracion:'—', price:12.53 },
     { id:'f_emp_maribel', name:'Indexa Empleo Autónomos 100% Acciones — MARIBEL — INDEXA', isin:'', ticker:'', num:962.470285, cost:12057.10, valoracion:'—', price:12.53 }
-  );
+  ];
 
-  // Marcar fondos Vanguard gestionados por Indexa.
+  // Solo añadir si falta. Nunca borrar/reinsertar, porque eso machacaba tus ediciones.
+  defaults.forEach(def => {
+    const key = (String(def.id||'') + ' ' + String(def.name||'')).toUpperCase();
+    const exists = DATA.fondos.some(f => {
+      const txt = (String(f.id||'') + ' ' + String(f.name||'')).toUpperCase();
+      if (String(f.id||'') === def.id) return true;
+      if (key.includes('PE5VZRGU')) return txt.includes('PE5VZRGU') || (txt.includes('INDEXA MÁS RENTABILIDAD ACCIONES PP') && txt.includes('JL'));
+      if (key.includes('QV9NAXTC')) return txt.includes('QV9NAXTC') || (txt.includes('INDEXA MÁS RENTABILIDAD ACCIONES PP') && txt.includes('MARIBEL'));
+      if (key.includes('JLMG CAPITAL')) return txt.includes('INDEXA EMPLEO') && (txt.includes('JLMG') || txt.includes('4KX1CSY5'));
+      if (key.includes('MARIBEL')) return txt.includes('INDEXA EMPLEO') && (txt.includes('MARIBEL') || txt.includes('BBI7LCHM'));
+      return false;
+    });
+    if(!exists) DATA.fondos.push({...def});
+  });
+
+  // Solo normalizar nombre de Vanguard Indexa si procede. No tocar precio, coste ni participaciones.
   const labels = {
     'IE00BFPM9V94':'Vanguard U.S. 500 Stock Index Inst Plus EUR Acc — INDEXA',
     'IE00BFPM9L96':'Vanguard European Stock Idx Inst Plus EUR Acc — INDEXA',
     'IE00BFPM9J74':'Vanguard Emerging Markets Stock Idx Inst+ EUR Acc — INDEXA',
     'IE00BFRTDD83':'Vanguard Global Small-Cap Index Inst Plus EUR Acc — INDEXA',
     'IE00BFPM9P35':'Vanguard Japan Stock Idx Inst Plus EUR Acc — INDEXA',
-    'IE00BCC5G60':'Vanguard Pacific Ex-Japan Stock Idx Inst + EUR Acc — INDEXA'
+    'IE00BGCC5G60':'Vanguard Pacific Ex-Japan Stock Idx Inst + EUR Acc — INDEXA'
   };
+
   DATA.fondos.forEach(f => {
     const isin = String(f.isin || '').toUpperCase();
-    if(labels[isin]) f.name = labels[isin];
+    if(isin === 'IE00BGCC5G60') f.isin = 'IE00BGCC5G60';
+    const fixedIsin = String(f.isin || '').toUpperCase();
+    if(labels[fixedIsin] && !String(f.name||'').includes('— INDEXA')) f.name = labels[fixedIsin];
   });
 }
 
@@ -3451,37 +3456,102 @@ function openAddFondo() {
 function editFondo(id) {
   const f = DATA.fondos.find(x => x.id === id);
   if (!f) return;
+
   editingId = id;
   document.getElementById('modalFondoTitle').textContent = 'Editar fondo / ETF';
-  document.getElementById('fName').value = f.name;
-  document.getElementById('fIsin').value = f.isin;
-  document.getElementById('fTicker').value = f.ticker || '';
-  document.getElementById('fNum').value = f.num;
-  document.getElementById('fCost').value = f.cost;
-  document.getElementById('fPriceManual').value = f.price || '';
-  document.getElementById('fValoracion').value = f.valoracion;
+
+  const set = (field, value) => {
+    const el = document.getElementById(field);
+    if (!el) return;
+    el.removeAttribute('readonly');
+    el.removeAttribute('disabled');
+    if (['fNum','fCost','fPriceManual'].includes(field)) {
+      el.type = 'text';
+      el.setAttribute('inputmode','decimal');
+      el.setAttribute('autocomplete','off');
+    }
+    el.value = value ?? '';
+  };
+
+  set('fName', f.name || '');
+  set('fIsin', String(f.isin || '').toUpperCase() === 'IE00BGCC5G60' ? 'IE00BGCC5G60' : (f.isin || ''));
+  set('fTicker', f.ticker || '');
+  set('fNum', f.num ?? '');
+  set('fCost', f.cost ?? '');
+  set('fPriceManual', f.price ?? '');
+  document.getElementById('fValoracion').value = f.valoracion || '—';
+
   openModal('modalFondo');
 }
 function saveFondo() {
-  const manualPrice = parseFloat(document.getElementById('fPriceManual').value);
-  const obj = {
-    name: document.getElementById('fName').value.trim(),
-    isin: document.getElementById('fIsin').value.trim(),
-    ticker: document.getElementById('fTicker').value.trim(),
-    num: parseFloat(document.getElementById('fNum').value),
-    cost: parseFloat(document.getElementById('fCost').value),
-    valoracion: document.getElementById('fValoracion').value,
-    price: isNaN(manualPrice) ? 0 : manualPrice
+  const numES = (v) => {
+    if (v === null || v === undefined) return 0;
+    if (typeof v === 'number') return isNaN(v) ? 0 : v;
+    let s = String(v).trim();
+    if (!s) return 0;
+    s = s.replace(/\s/g,'').replace(/€/g,'');
+    if (s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',', '.');
+    else s = s.replace(',', '.');
+    const n = Number(s);
+    return isNaN(n) ? 0 : n;
   };
-  if (!obj.name || isNaN(obj.num)) return;
-  if (editingId) {
-    const f = DATA.fondos.find(x => x.id === editingId);
-    if (f) { if (!obj.price) obj.price = f.price; Object.assign(f, obj); }
-  } else {
-    obj.id = 'f' + Date.now();
-    DATA.fondos.push(obj);
+
+  const name = document.getElementById('fName').value.trim();
+  let isin = document.getElementById('fIsin').value.trim().toUpperCase().replace(/\s/g,'');
+  const ticker = document.getElementById('fTicker').value.trim();
+  const num = numES(document.getElementById('fNum').value);
+  const cost = numES(document.getElementById('fCost').value);
+  const priceManual = numES(document.getElementById('fPriceManual').value);
+  const valoracion = document.getElementById('fValoracion').value || '—';
+
+  if (isin === 'IE00BGCC5G60' || name.toUpperCase().includes('PACIFIC EX-JAPAN')) isin = 'IE00BGCC5G60';
+
+  if (!name) {
+    alert('Falta el nombre del fondo.');
+    return;
   }
-  saveData(); renderAll(); closeModal('modalFondo');
+  if (!num || isNaN(num)) {
+    alert('Revisa el número de participaciones.');
+    return;
+  }
+
+  let f = null;
+  if (editingId) f = DATA.fondos.find(x => x.id === editingId);
+
+  if (!f && isin) f = DATA.fondos.find(x => String(x.isin || '').toUpperCase() === isin);
+
+  if (!f) {
+    const cleanName = name.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    f = DATA.fondos.find(x => {
+      const xn = String(x.name || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      return xn.slice(0,35) === cleanName.slice(0,35);
+    });
+  }
+
+  if (!f) {
+    f = { id: 'f' + Date.now() };
+    DATA.fondos.push(f);
+    editingId = f.id;
+  }
+
+  // Guardar TODOS los campos editables. No proteger Indexa/Reinizia.
+  f.name = name;
+  f.isin = isin;
+  f.ticker = ticker;
+  f.num = num;
+  f.cost = cost;
+  f.valoracion = valoracion;
+  f.price = priceManual > 0 ? priceManual : Number(f.price || 0);
+
+  const blob = (name + ' ' + isin + ' ' + ticker).toUpperCase();
+  if (blob.includes('INDEXA') || blob.includes('PE5VZRGU') || blob.includes('QV9NAXTC') || blob.includes('4KX1CSY5') || blob.includes('BBI7LCHM')) {
+    f.category = 'fondos';
+    if (!f.type) f.type = blob.includes('EMPLEO') ? 'plan_empleo_autonomos' : 'plan_pensiones';
+  }
+
+  saveData();
+  renderAll();
+  closeModal('modalFondo');
 }
 function deleteFondo(id) {
   if (!confirm('¿Eliminar este fondo?')) return;
@@ -4334,7 +4404,7 @@ function findFondosForPriceRow(row) {
     if (key && (fIsin === key || fTicker === key)) return true;
     if (nombre && (fName.includes(nombre) || nombre.includes(fName))) return true;
 
-    if (isin === 'IE00BCC5G60' && fName.includes('VANGUARDPACIFIC')) return true;
+    if (isin === 'IE00BGCC5G60' && fName.includes('VANGUARDPACIFIC')) return true;
     if (isin === 'IE000JMRXFF8' && fName.includes('WELLINGTONENDURING')) return true;
     if (isin === 'LU1330191542' && fName.includes('MAGALLANES')) return true;
 
@@ -4584,140 +4654,44 @@ function cleanFiscalDate(v){
 </script>
 
 
-<script id="jlmg-variacion-diaria-tarjetas">
+
+
+
+<style id="jlmg-crypto-section-final-css">
+.jlmg-crypto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:18px 0}
+.jlmg-crypto-card{background:var(--card,#151922);border:1px solid var(--border,#2a3140);border-radius:18px;padding:18px}
+.jlmg-crypto-card .name{font-size:16px;color:var(--muted,#aaa);margin-bottom:8px}
+.jlmg-crypto-card .value{font-size:26px;font-weight:800}
+.jlmg-crypto-card .sub{font-size:14px;color:var(--muted,#aaa);margin-top:6px}
+.jlmg-crypto-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px}
+.jlmg-acciones-daily-pct{text-align:right!important;white-space:nowrap!important}
+</style>
+<script id="jlmg-var-diaria-acciones-yahoo-final">
 (function(){
-  function money2(n){
-    if (typeof eur === 'function') return eur(Number(n || 0));
-    return (Number(n || 0)).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
-  }
-  function gainHtml(n){
-    if (typeof gainSpan === 'function') return gainSpan(Number(n || 0));
-    const v = Number(n || 0);
-    return '<span style="color:' + (v >= 0 ? 'var(--green,#63d794)' : 'var(--red,#ff6b5f)') + '">' + (v>=0?'+':'') + money2(v) + '</span>';
-  }
-  function numberValue(v){
-    if (typeof v === 'number') return v;
-    if (v === null || v === undefined || v === '') return 0;
-    return Number(String(v).replace(/\s/g,'').replace(/€/g,'').replace(/\./g,'').replace(',', '.')) || 0;
-  }
-  function get(row, keys){
-    for (const k of keys){
-      if (row && row[k] !== undefined) return numberValue(row[k]);
-    }
-    return 0;
-  }
-  function ensureLine(id, label, value){
-    const el = document.getElementById(id);
-    if (!el) return;
-    let line = el.parentElement.querySelector('.daily-card-line');
-    if (!line) {
-      line = document.createElement('div');
-      line.className = 'daily-card-line';
-      line.style.marginTop = '8px';
-      line.style.fontSize = '14px';
-      line.style.color = 'var(--text2,#aaa)';
-      el.parentElement.appendChild(line);
-    }
-    line.innerHTML = label + ': ' + gainHtml(value);
-  }
-  function computeOtros(row){
-    return get(row, ['Caja JLMG']) +
-           get(row, ['Cripto']) +
-           get(row, ['Indexa Emp']) +
-           get(row, ['Otros']) +
-           get(row, ['Cajas Grupo']);
-  }
-  function updateDailyCardsFromRows(rows){
-    if (!rows || rows.length < 2) {
-      ensureLine('summAccionesGain', 'Variación diaria', 0);
-      ensureLine('summFondosGain', 'Variación diaria', 0);
-      ensureLine('summOtrosSub', 'Variación diaria', 0);
-      return;
-    }
-
-    const sorted = rows.slice().sort((a,b) => String(b.Fecha || '').localeCompare(String(a.Fecha || '')));
-    const today = sorted[0];
-    const prev = sorted[1];
-
-    const dAcciones = get(today, ['Acciones']) - get(prev, ['Acciones']);
-    const dFondos = get(today, ['Fondos/ETF', 'Fondos / ETF', 'Fondos']) - get(prev, ['Fondos/ETF', 'Fondos / ETF', 'Fondos']);
-    const dOtros = computeOtros(today) - computeOtros(prev);
-
-    ensureLine('summAccionesGain', 'Variación diaria', dAcciones);
-    ensureLine('summFondosGain', 'Variación diaria', dFondos);
-    ensureLine('summOtrosSub', 'Variación diaria', dOtros);
-  }
-  function loadDailyCards(){
-    if (typeof SHEETS_API_URL === 'undefined' || !SHEETS_API_URL || SHEETS_API_URL === 'TU_URL_AQUI') return;
-    fetch(SHEETS_API_URL + '?action=history&_=' + Date.now(), { method:'GET', cache:'no-store', redirect:'follow' })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d && d.rows) updateDailyCardsFromRows(d.rows);
-      })
-      .catch(() => {});
-  }
-
-  if (!window.__JLMG_DAILY_CARDS_INSTALLED__) {
-    window.__JLMG_DAILY_CARDS_INSTALLED__ = true;
-    const oldRenderResumen = window.renderResumen;
-    window.renderResumen = function(){
-      if (typeof oldRenderResumen === 'function') oldRenderResumen();
-      setTimeout(loadDailyCards, 150);
-    };
-    setTimeout(loadDailyCards, 600);
-  }
+function num(v){if(typeof v==='number')return isNaN(v)?0:v;if(v==null||v==='')return 0;const n=Number(String(v).replace(/\s/g,'').replace(/€/g,'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n}
+function pct(v){return(v>=0?'+':'')+Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' %'}
+function cls(v){return v>=0?'pos':'neg'}
+function norm(s){return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]+/g,'')}
+function findAccion(row){if(!window.DATA||!Array.isArray(DATA.acciones))return null;const txt=norm(row.textContent);let best=null,score=0;DATA.acciones.forEach(a=>{const vals=[a.ticker,a.isin,a.id,a.name].map(norm);let s=0;if(vals[0]&&txt.includes(vals[0]))s+=100;if(vals[1]&&txt.includes(vals[1]))s+=80;if(vals[2]&&txt.includes(vals[2]))s+=20;if(vals[3]&&txt.includes(vals[3].slice(0,20)))s+=30;if(s>score){score=s;best=a}});return best}
+function patchAcciones(){const sec=document.getElementById('sec-acciones');if(!sec)return;const table=sec.querySelector('table');if(!table)return;const head=table.querySelector('thead tr'),body=table.querySelector('tbody');if(!head||!body)return;if(!Array.from(head.children).some(th=>norm(th.textContent).includes('VARDIARIA'))){const th=document.createElement('th');th.textContent='VAR. DIARIA %';th.style.textAlign='right';th.style.whiteSpace='nowrap';head.insertBefore(th,head.lastElementChild||null)}Array.from(body.querySelectorAll('tr')).forEach(row=>{let cell=row.querySelector('td.jlmg-acciones-daily-pct');if(!cell){cell=document.createElement('td');cell.className='jlmg-acciones-daily-pct';row.insertBefore(cell,row.lastElementChild||null)}const a=findAccion(row);if(!a||a.dailyPct===undefined||a.dailyPct===null||a.dailyPct==='')cell.innerHTML='<span style="color:var(--muted,#888)">—</span>';else{const v=num(a.dailyPct);cell.innerHTML='<span class="'+cls(v)+'">'+(v>=0?'▲ ':'▼ ')+pct(v)+'</span>'}})}
+function install(){if(window.__JLMG_ACCIONES_DAILY_FINAL__)return;window.__JLMG_ACCIONES_DAILY_FINAL__=true;const ra=window.renderAcciones;if(typeof ra==='function')window.renderAcciones=function(){ra();setTimeout(patchAcciones,80)};const rall=window.renderAll;if(typeof rall==='function')window.renderAll=function(){rall();setTimeout(patchAcciones,80)};setTimeout(patchAcciones,500);setTimeout(patchAcciones,1500)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install()
 })();
 </script>
-
-
-<script id="jlmg-historico-otros-igual-resumen">
+<script id="jlmg-crypto-section-final">
 (function(){
-  function aplicarOtrosResumenEnHistorico(){
-    if (typeof renderHistorico !== 'function' || typeof totalOtros !== 'function') return;
-    if (window.__JLMG_HISTORICO_OTROS_IGUAL_RESUMEN__) return;
-    window.__JLMG_HISTORICO_OTROS_IGUAL_RESUMEN__ = true;
-
-    const renderHistoricoOriginal = renderHistorico;
-
-    renderHistorico = function(){
-      renderHistoricoOriginal();
-
-      try {
-        const body = document.getElementById('historicoBody');
-        if (!body) return;
-
-        // EXACTAMENTE el mismo importe que usa Resumen:
-        const otrosResumen = totalOtros();
-
-        body.querySelectorAll('tr').forEach(tr => {
-          const celdaOtros = tr.children[4]; // columna "Otros" en Histórico
-          if (!celdaOtros) return;
-          celdaOtros.textContent = typeof eur === 'function'
-            ? eur(otrosResumen)
-            : Number(otrosResumen || 0).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
-          celdaOtros.title = 'Mismo importe que la tarjeta Otros bienes del Resumen';
-        });
-      } catch(e) {
-        console.warn('No se pudo igualar Otros histórico con Resumen:', e);
-      }
-    };
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', aplicarOtrosResumenEnHistorico);
-  } else {
-    aplicarOtrosResumenEnHistorico();
-  }
-
-  setTimeout(function(){
-    aplicarOtrosResumenEnHistorico();
-    try {
-      const sec = document.getElementById('sec-historico');
-      if (sec && sec.classList.contains('active') && typeof loadHistorico === 'function') {
-        loadHistorico();
-      }
-    } catch(e){}
-  }, 400);
+function num(v){if(typeof v==='number')return isNaN(v)?0:v;if(v==null||v==='')return 0;const n=Number(String(v).replace(/\s/g,'').replace(/€/g,'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n}
+function money(v){return typeof eur==='function'?eur(v):Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'}
+function pct(v){return(v>=0?'+':'')+Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' %'}
+function cls(v){return v>=0?'pos':'neg'}
+function ensureCryptoData(){if(!window.DATA)return[];if(!Array.isArray(DATA.criptos)){DATA.criptos=[];if(Array.isArray(DATA.otros)){DATA.otros.forEach(o=>{const txt=String([o.name,o.cat,o.code,o.ticker].filter(Boolean).join(' ')).toUpperCase();if(txt.includes('BITCOIN')||txt.includes('BTC'))DATA.criptos.push({id:'crypto_btc',name:'Bitcoin',ticker:'BTC',coingeckoId:'bitcoin',units:num(o.units||o.num||o.quantity||0),price:num(o.price||0),value:num(o.value||0),dailyPct:num(o.dailyPct||0),cost:num(o.cost||0)});else if(txt.includes('ETHEREUM')||txt.includes('ETHER')||txt.includes('ETH'))DATA.criptos.push({id:'crypto_eth',name:'Ethereum',ticker:'ETH',coingeckoId:'ethereum',units:num(o.units||o.num||o.quantity||0),price:num(o.price||0),value:num(o.value||0),dailyPct:num(o.dailyPct||0),cost:num(o.cost||0)})})}if(!DATA.criptos.some(c=>String(c.ticker||'').toUpperCase()==='BTC'))DATA.criptos.push({id:'crypto_btc',name:'Bitcoin',ticker:'BTC',coingeckoId:'bitcoin',units:0,price:0,value:0,dailyPct:0,cost:0});if(!DATA.criptos.some(c=>String(c.ticker||'').toUpperCase()==='ETH'))DATA.criptos.push({id:'crypto_eth',name:'Ethereum',ticker:'ETH',coingeckoId:'ethereum',units:0,price:0,value:0,dailyPct:0,cost:0})}DATA.criptos.forEach(c=>{if(!c.id)c.id='crypto_'+String(c.ticker||Date.now()).toLowerCase();if(!c.coingeckoId){const t=String(c.ticker||'').toUpperCase();if(t==='BTC')c.coingeckoId='bitcoin';if(t==='ETH')c.coingeckoId='ethereum'}c.units=num(c.units||c.num||c.quantity||0);c.price=num(c.price||0);c.value=c.units&&c.price?c.units*c.price:num(c.value||0);c.dailyPct=num(c.dailyPct||0);c.cost=num(c.cost||0)});return DATA.criptos}
+function addNav(){if(document.querySelector('[data-tab="criptos"],button[onclick*="showCryptoSection"]'))return;const buttons=Array.from(document.querySelectorAll('button,.tab,.nav button,.tabs button'));const ref=buttons.find(b=>/otros|hist[oó]rico|fondos|acciones/i.test(b.textContent||''));const parent=ref&&ref.parentElement;if(!parent)return;const btn=document.createElement(ref.tagName||'button');btn.textContent='Criptomonedas';btn.className=ref.className||'tab';btn.onclick=function(){showCryptoSection()};parent.appendChild(btn)}
+function ensureSection(){let sec=document.getElementById('sec-criptos');if(sec)return sec;sec=document.createElement('section');sec.id='sec-criptos';sec.className='section';sec.style.display='none';sec.innerHTML='<h2>Criptomonedas</h2><div class="jlmg-crypto-actions"><button onclick="updateCryptoPricesFromApp&&updateCryptoPricesFromApp()">Actualizar criptomonedas</button><button onclick="renderCriptos&&renderCriptos()">Refrescar</button></div><div id="cryptoCards" class="jlmg-crypto-grid"></div><div class="table-wrap"><table><thead><tr><th>Cripto</th><th>Ticker</th><th>Unidades</th><th>Precio EUR</th><th>Valor</th><th>Var. diaria %</th><th>Coste</th><th>Resultado</th></tr></thead><tbody id="cryptoBody"></tbody></table></div>';(document.querySelector('main')||document.body).appendChild(sec);return sec}
+window.showCryptoSection=function(){document.querySelectorAll('section,.section,.view').forEach(el=>{if(el.id&&/^sec-/.test(el.id)){el.classList.remove('active');el.style.display='none'}});const sec=ensureSection();sec.style.display='block';sec.classList.add('active');renderCriptos()}
+window.renderCriptos=function(){const list=ensureCryptoData(),cards=document.getElementById('cryptoCards'),body=document.getElementById('cryptoBody');const total=list.reduce((s,c)=>s+num(c.value),0),gain=list.reduce((s,c)=>s+num(c.value)-num(c.cost),0),daily=list.reduce((s,c)=>{const v=num(c.value),p=num(c.dailyPct),prev=p?v/(1+p/100):v;return s+v-prev},0),dailyPct=total-daily?daily/(total-daily)*100:0;if(cards)cards.innerHTML='<div class="jlmg-crypto-card"><div class="name">Valor cripto</div><div class="value">'+money(total)+'</div><div class="sub">Variación diaria: <span class="'+cls(daily)+'">'+(daily>=0?'+':'')+money(daily)+'</span> '+pct(dailyPct)+'</div></div><div class="jlmg-crypto-card"><div class="name">Resultado cripto</div><div class="value '+cls(gain)+'">'+(gain>=0?'+':'')+money(gain)+'</div><div class="sub">Valor - coste</div></div>';if(body)body.innerHTML=list.map(c=>{const r=num(c.value)-num(c.cost);return'<tr><td>'+String(c.name||'')+'</td><td>'+String(c.ticker||'')+'</td><td>'+num(c.units).toLocaleString('es-ES',{minimumFractionDigits:6,maximumFractionDigits:8})+'</td><td>'+money(c.price)+'</td><td>'+money(c.value)+'</td><td class="'+cls(c.dailyPct)+'">'+pct(c.dailyPct)+'</td><td>'+money(c.cost)+'</td><td class="'+cls(r)+'">'+(r>=0?'+':'')+money(r)+'</td></tr>'}).join('')}
+window.updateCryptoPricesFromApp=function(){if(typeof SHEETS_API_URL==='undefined'||!SHEETS_API_URL||SHEETS_API_URL==='TU_URL_AQUI'){alert('No está configurado SHEETS_API_URL');return}fetch(SHEETS_API_URL+'?action=crypto&_='+Date.now(),{method:'GET',cache:'no-store',redirect:'follow'}).then(r=>r.json()).then(d=>{if(d&&d.data){window.DATA=d.data;if(typeof renderAll==='function')try{renderAll()}catch(e){}renderCriptos();alert('Criptomonedas actualizadas')}else alert('Respuesta cripto sin datos')}).catch(e=>alert('Error actualizando criptomonedas: '+e))}
+function install(){if(window.__JLMG_CRYPTO_SECTION_FINAL__)return;window.__JLMG_CRYPTO_SECTION_FINAL__=true;ensureCryptoData();addNav();ensureSection();const old=window.renderAll;if(typeof old==='function')window.renderAll=function(){old();ensureCryptoData();addNav();ensureSection()};setTimeout(()=>{ensureCryptoData();addNav();ensureSection()},700)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install()
 })();
 </script>
 
