@@ -2360,7 +2360,7 @@ function applyIndexaDefinitivoLimpio(){
 
   DATA.fondos.forEach(f => {
     const isin = String(f.isin || '').toUpperCase();
-    if(isin === 'IE00BGCC5G60') f.isin = 'IE00BGCC5G60';
+    if(isin === 'IE00BCC5G60') f.isin = 'IE00BGCC5G60';
     const fixedIsin = String(f.isin || '').toUpperCase();
     if(labels[fixedIsin] && !String(f.name||'').includes('— INDEXA')) f.name = labels[fixedIsin];
   });
@@ -3474,7 +3474,7 @@ function editFondo(id) {
   };
 
   set('fName', f.name || '');
-  set('fIsin', String(f.isin || '').toUpperCase() === 'IE00BGCC5G60' ? 'IE00BGCC5G60' : (f.isin || ''));
+  set('fIsin', String(f.isin || '').toUpperCase() === 'IE00BCC5G60' ? 'IE00BGCC5G60' : (f.isin || ''));
   set('fTicker', f.ticker || '');
   set('fNum', f.num ?? '');
   set('fCost', f.cost ?? '');
@@ -3504,7 +3504,7 @@ function saveFondo() {
   const priceManual = numES(document.getElementById('fPriceManual').value);
   const valoracion = document.getElementById('fValoracion').value || '—';
 
-  if (isin === 'IE00BGCC5G60' || name.toUpperCase().includes('PACIFIC EX-JAPAN')) isin = 'IE00BGCC5G60';
+  if (isin === 'IE00BCC5G60' || name.toUpperCase().includes('PACIFIC EX-JAPAN')) isin = 'IE00BGCC5G60';
 
   if (!name) {
     alert('Falta el nombre del fondo.');
@@ -4655,79 +4655,168 @@ function cleanFiscalDate(v){
 
 
 
-
-
-
-<style id="jlmg-crypto-clean-final-css">
-.jlmg-crypto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:18px 0}
-.jlmg-crypto-card{background:var(--card,#151515);border:1px solid var(--border,#333);border-radius:18px;padding:18px}
-.jlmg-crypto-card .name{font-size:15px;color:var(--muted,#aaa);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}
-.jlmg-crypto-card .value{font-size:28px;font-weight:800}
-.jlmg-crypto-card .sub{font-size:14px;color:var(--muted,#aaa);margin-top:6px}
-.jlmg-crypto-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px}
-.jlmg-acciones-daily-pct{text-align:right!important;white-space:nowrap!important}
-</style>
-
-<script id="jlmg-crypto-clean-final">
+<script id="jlmg-card-daily-from-history">
 (function(){
-function num(v){if(typeof v==='number')return isNaN(v)?0:v;if(v==null||v==='')return 0;const n=Number(String(v).replace(/\s/g,'').replace(/€/g,'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n}
-function money(v){return typeof eur==='function'?eur(v):Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'}
-function pct(v){return(v>=0?'+':'')+Number(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' %'}
-function cls(v){return v>=0?'pos':'neg'}
-function norm(s){return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]+/g,'')}
-function ensureData(){if(!window.DATA)window.DATA={};if(!Array.isArray(DATA.acciones))DATA.acciones=[];if(!Array.isArray(DATA.fondos))DATA.fondos=[];if(!Array.isArray(DATA.otros))DATA.otros=[];if(!Array.isArray(DATA.criptos))DATA.criptos=[]}
-function isCryptoObj(o){const t=norm([o&&o.name,o&&o.cat,o&&o.code,o&&o.ticker,o&&o.notes].filter(Boolean).join(' '));return t.includes('BITCOIN')||t.includes('BTC')||t.includes('ETHEREUM')||t.includes('ETHER')||t.includes('ETH')}
-function cryptoType(o){const t=norm([o&&o.name,o&&o.cat,o&&o.code,o&&o.ticker,o&&o.notes].filter(Boolean).join(' '));if(t.includes('BITCOIN')||t.includes('BTC'))return'BTC';if(t.includes('ETHEREUM')||t.includes('ETHER')||t.includes('ETH'))return'ETH';return''}
-function hasCrypto(t){return DATA.criptos.some(c=>String(c.ticker||'').toUpperCase()===t)}
-function migrateAndCleanCryptos(){
- ensureData();
- DATA.otros.forEach(o=>{
-   if(!isCryptoObj(o))return;
-   const t=cryptoType(o); if(!t||hasCrypto(t))return;
-   const value=num(o.value||o.valor||0),units=num(o.units||o.num||o.quantity||o.cantidad||0),price=num(o.price||o.precio||0),cost=num(o.cost||o.coste||0);
-   DATA.criptos.push({id:t==='BTC'?'crypto_btc':'crypto_eth',name:t==='BTC'?'Bitcoin':'Ethereum',ticker:t,coingeckoId:t==='BTC'?'bitcoin':'ethereum',units:units,price:price,value:units&&price?units*price:value,cost:cost,dailyPct:num(o.dailyPct||o.varDiariaPct||0)});
- });
- DATA.otros=DATA.otros.filter(o=>!isCryptoObj(o));
- if(!hasCrypto('BTC'))DATA.criptos.push({id:'crypto_btc',name:'Bitcoin',ticker:'BTC',coingeckoId:'bitcoin',units:0,price:0,value:0,cost:0,dailyPct:0});
- if(!hasCrypto('ETH'))DATA.criptos.push({id:'crypto_eth',name:'Ethereum',ticker:'ETH',coingeckoId:'ethereum',units:0,price:0,value:0,cost:0,dailyPct:0});
- DATA.criptos.forEach(c=>{c.ticker=String(c.ticker||'').toUpperCase();if(!c.id)c.id='crypto_'+String(c.ticker||Date.now()).toLowerCase();if(!c.coingeckoId){if(c.ticker==='BTC')c.coingeckoId='bitcoin';if(c.ticker==='ETH')c.coingeckoId='ethereum'}c.units=num(c.units||c.num||c.quantity||0);c.price=num(c.price||0);c.cost=num(c.cost||0);c.dailyPct=num(c.dailyPct||0);c.value=c.units&&c.price?c.units*c.price:num(c.value||0)});
-}
-function saveOnce(){if(window.__JLMG_CRYPTO_CLEAN_SAVED__)return;window.__JLMG_CRYPTO_CLEAN_SAVED__=true;try{if(typeof saveData==='function')saveData()}catch(e){}}
-function removeDuplicateCryptoTabs(){
- const els=Array.from(document.querySelectorAll('button,.tab,.nav button,.tabs button,a'));let found=false;
- els.forEach(el=>{const txt=(el.textContent||'').trim().toLowerCase();if(txt==='criptomonedas'||txt==='criptomoneda'||txt==='crypto'||txt==='criptos'){if(found)el.remove();else{found=true;el.textContent='Criptomonedas';el.setAttribute('data-jlmg-crypto-tab','1');el.onclick=function(ev){ev.preventDefault();showCryptoSection()}}}});
-}
-function addSingleCryptoTab(){
- removeDuplicateCryptoTabs(); if(document.querySelector('[data-jlmg-crypto-tab="1"]'))return;
- const buttons=Array.from(document.querySelectorAll('button,.tab,.nav button,.tabs button,a'));
- const ref=buttons.find(b=>/otros|hist[oó]rico|fondos|acciones|fiscal/i.test(b.textContent||'')); const parent=ref&&ref.parentElement; if(!parent)return;
- const btn=document.createElement(ref.tagName||'button'); btn.textContent='Criptomonedas'; btn.className=ref.className||'tab'; btn.setAttribute('data-jlmg-crypto-tab','1'); btn.onclick=function(ev){ev.preventDefault();showCryptoSection()}; parent.appendChild(btn);
-}
-function ensureCryptoSection(){
- let sec=document.getElementById('sec-criptos'); if(sec)return sec;
- sec=document.createElement('section'); sec.id='sec-criptos'; sec.className='section'; sec.style.display='none';
- sec.innerHTML='<h2>Criptomonedas</h2><p style="color:var(--muted,#aaa);margin-top:-8px">BTC/ETH actualizados en EUR con CoinGecko.</p><div class="jlmg-crypto-actions"><button onclick="updateCryptoPricesFromApp&&updateCryptoPricesFromApp()">Actualizar criptomonedas</button><button onclick="renderCriptos&&renderCriptos()">Refrescar</button></div><div id="cryptoCards" class="jlmg-crypto-grid"></div><div class="table-wrap"><table><thead><tr><th>Cripto</th><th>Ticker</th><th>Unidades</th><th>Precio EUR</th><th>Valor</th><th>Var. diaria %</th><th>Coste</th><th>Resultado</th></tr></thead><tbody id="cryptoBody"></tbody></table></div>';
- (document.querySelector('main')||document.body).appendChild(sec); return sec;
-}
-function hideSections(){document.querySelectorAll('section,.section,.view').forEach(el=>{if(el.id&&/^sec-/.test(el.id)){el.classList.remove('active');el.style.display='none'}});document.querySelectorAll('.tab,.nav button,.tabs button,a').forEach(b=>{if(b.classList)b.classList.remove('active')})}
-window.showCryptoSection=function(){migrateAndCleanCryptos();hideSections();const sec=ensureCryptoSection();sec.style.display='block';sec.classList.add('active');const tab=document.querySelector('[data-jlmg-crypto-tab="1"]');if(tab&&tab.classList)tab.classList.add('active');renderCriptos()}
-window.renderCriptos=function(){migrateAndCleanCryptos();const list=DATA.criptos||[],cards=document.getElementById('cryptoCards'),body=document.getElementById('cryptoBody');const total=list.reduce((s,c)=>s+num(c.value),0),cost=list.reduce((s,c)=>s+num(c.cost),0),gain=total-cost,daily=list.reduce((s,c)=>{const v=num(c.value),p=num(c.dailyPct),prev=p?v/(1+p/100):v;return s+(v-prev)},0),dailyPct=(total-daily)?daily/(total-daily)*100:0;if(cards)cards.innerHTML='<div class="jlmg-crypto-card"><div class="name">Valor cripto</div><div class="value">'+money(total)+'</div><div class="sub">Variación diaria: <span class="'+cls(daily)+'">'+(daily>=0?'+':'')+money(daily)+'</span> '+pct(dailyPct)+'</div></div><div class="jlmg-crypto-card"><div class="name">Resultado cripto</div><div class="value '+cls(gain)+'">'+(gain>=0?'+':'')+money(gain)+'</div><div class="sub">Valor - coste</div></div>';if(body)body.innerHTML=list.map(c=>{const r=num(c.value)-num(c.cost);return'<tr><td>'+String(c.name||'')+'</td><td>'+String(c.ticker||'')+'</td><td>'+num(c.units).toLocaleString('es-ES',{minimumFractionDigits:6,maximumFractionDigits:8})+'</td><td>'+money(c.price)+'</td><td>'+money(c.value)+'</td><td class="'+cls(c.dailyPct)+'">'+pct(c.dailyPct)+'</td><td>'+money(c.cost)+'</td><td class="'+cls(r)+'">'+(r>=0?'+':'')+money(r)+'</td></tr>'}).join('')}
-window.updateCryptoPricesFromApp=function(){if(typeof SHEETS_API_URL==='undefined'||!SHEETS_API_URL||SHEETS_API_URL==='TU_URL_AQUI'){alert('No está configurado SHEETS_API_URL');return}fetch(SHEETS_API_URL+'?action=crypto&_='+Date.now(),{method:'GET',cache:'no-store',redirect:'follow'}).then(r=>r.json()).then(d=>{if(d&&d.data){window.DATA=d.data;migrateAndCleanCryptos();try{if(typeof saveData==='function')saveData()}catch(e){}try{if(typeof renderAll==='function')renderAll()}catch(e){}addSingleCryptoTab();ensureCryptoSection();renderCriptos();alert('Criptomonedas actualizadas')}else alert('Respuesta cripto sin datos')}).catch(e=>alert('Error actualizando criptomonedas: '+e))}
-function patchAccionesDaily(){
- const sec=document.getElementById('sec-acciones'); if(!sec)return; const table=sec.querySelector('table'); if(!table)return; const head=table.querySelector('thead tr'),body=table.querySelector('tbody'); if(!head||!body)return;
- if(!Array.from(head.children).some(th=>norm(th.textContent).includes('VARDIARIA'))){const th=document.createElement('th');th.textContent='VAR. DIARIA %';th.style.textAlign='right';th.style.whiteSpace='nowrap';head.insertBefore(th,head.lastElementChild||null)}
- Array.from(body.querySelectorAll('tr')).forEach(row=>{let cell=row.querySelector('td.jlmg-acciones-daily-pct');if(!cell){cell=document.createElement('td');cell.className='jlmg-acciones-daily-pct';row.insertBefore(cell,row.lastElementChild||null)}const txt=norm(row.textContent);let a=null,score=0;(DATA.acciones||[]).forEach(x=>{const vals=[x.ticker,x.isin,x.id,x.name].map(norm);let s=0;if(vals[0]&&txt.includes(vals[0]))s+=100;if(vals[1]&&txt.includes(vals[1]))s+=80;if(vals[2]&&txt.includes(vals[2]))s+=20;if(vals[3]&&txt.includes(vals[3].slice(0,20)))s+=30;if(s>score){score=s;a=x}});if(!a||a.dailyPct===undefined||a.dailyPct===null||a.dailyPct==='')cell.innerHTML='<span style="color:var(--muted,#888)">—</span>';else{const v=num(a.dailyPct);cell.innerHTML='<span class="'+cls(v)+'">'+(v>=0?'▲ ':'▼ ')+pct(v)+'</span>'}});
-}
-function install(){
- if(window.__JLMG_CRYPTO_CLEAN_FINAL__)return;window.__JLMG_CRYPTO_CLEAN_FINAL__=true;
- migrateAndCleanCryptos();addSingleCryptoTab();ensureCryptoSection();saveOnce();
- const oldAll=window.renderAll;if(typeof oldAll==='function')window.renderAll=function(){oldAll();migrateAndCleanCryptos();removeDuplicateCryptoTabs();addSingleCryptoTab();ensureCryptoSection();patchAccionesDaily()};
- const oldOtros=window.renderOtros;if(typeof oldOtros==='function')window.renderOtros=function(){migrateAndCleanCryptos();oldOtros();saveOnce()};
- const oldAcc=window.renderAcciones;if(typeof oldAcc==='function')window.renderAcciones=function(){oldAcc();patchAccionesDaily()};
- setTimeout(()=>{migrateAndCleanCryptos();removeDuplicateCryptoTabs();addSingleCryptoTab();ensureCryptoSection();patchAccionesDaily();saveOnce()},400);
- setTimeout(()=>{migrateAndCleanCryptos();removeDuplicateCryptoTabs();addSingleCryptoTab();ensureCryptoSection();patchAccionesDaily()},1200);
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+  function num(v){
+    if (typeof v === 'number') return isNaN(v) ? 0 : v;
+    if (v === null || v === undefined || v === '') return 0;
+    const s = String(v).replace(/\s/g,'').replace(/€/g,'').replace(/\./g,'').replace(',', '.');
+    const n = Number(s);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function money(v){
+    if (typeof eur === 'function') return eur(v);
+    return Number(v || 0).toLocaleString('es-ES',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+  }
+
+  function signedMoney(v){ return (v >= 0 ? '+' : '') + money(v); }
+
+  function pct(v){
+    return (v >= 0 ? '+' : '') + Number(v || 0).toLocaleString('es-ES',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' %';
+  }
+
+  function cls(v){ return v >= 0 ? 'pos' : 'neg'; }
+
+  function get(row, keys){
+    for (const k of keys){
+      if (row && row[k] !== undefined && row[k] !== null && row[k] !== '') return num(row[k]);
+    }
+    return 0;
+  }
+
+  function rowDate(row){
+    return String(row.Fecha || row.fecha || row.date || '');
+  }
+
+  function sortRows(rows){
+    return (rows || []).slice().sort((a,b) => rowDate(b).localeCompare(rowDate(a)));
+  }
+
+  function normalizeHistoryRows(payload){
+    if (payload && Array.isArray(payload.rows)) return payload.rows;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(window.HISTORICO)) return window.HISTORICO;
+    if (Array.isArray(window.historicoRows)) return window.historicoRows;
+    return [];
+  }
+
+  function extractValues(row){
+    const total = get(row, ['Total','total','totalReal']);
+    const acciones = get(row, ['Acciones','acciones']);
+    const fondos = get(row, ['Fondos/ETF','Fondos / ETF','Fondos','fondos']);
+
+    // Otros bienes consolidado, igual que debe cuadrar con el resumen.
+    const otros = total - acciones - fondos;
+
+    return { total, acciones, fondos, otros };
+  }
+
+  function calcFromRows(rows){
+    const sorted = sortRows(rows);
+    if (sorted.length < 2) return null;
+
+    const cur = extractValues(sorted[0]);
+    const prev = extractValues(sorted[1]);
+
+    function pack(actual, anterior){
+      const diff = actual - anterior;
+      const p = anterior ? diff / anterior * 100 : 0;
+      return { eur: diff, pct: p };
+    }
+
+    return {
+      acciones: pack(cur.acciones, prev.acciones),
+      fondos: pack(cur.fondos, prev.fondos),
+      otros: pack(cur.otros, prev.otros)
+    };
+  }
+
+  function removeOldDailyLines(card){
+    if (!card) return;
+    card.querySelectorAll('.daily-card-line, .jlmg-card-daily-line, .jlmg-card-daily-history-line').forEach(x => x.remove());
+
+    Array.from(card.children).forEach(ch => {
+      if (ch.textContent && ch.textContent.trim().startsWith('Variación diaria:')) ch.remove();
+    });
+  }
+
+  function setCardLine(anchorId, data){
+    const anchor = document.getElementById(anchorId);
+    if (!anchor) return;
+
+    const card = anchor.parentElement;
+    removeOldDailyLines(card);
+
+    const line = document.createElement('div');
+    line.className = 'jlmg-card-daily-history-line';
+    line.style.marginTop = '10px';
+    line.style.fontSize = '16px';
+    line.style.color = 'var(--muted,#aaa)';
+    line.innerHTML =
+      'Variación diaria: ' +
+      '<span class="' + cls(data.eur) + '">' + signedMoney(data.eur) + '</span>' +
+      ' <span style="color:var(--text2,#aaa)">' + pct(data.pct) + '</span>';
+
+    card.appendChild(line);
+  }
+
+  function applyRows(rows){
+    const calc = calcFromRows(rows);
+    if (!calc) return;
+
+    setCardLine('summAccionesGain', calc.acciones);
+    setCardLine('summFondosGain', calc.fondos);
+    setCardLine('summOtrosSub', calc.otros);
+  }
+
+  function loadAndApply(){
+    const localRows = normalizeHistoryRows(null);
+    if (localRows.length >= 2) {
+      applyRows(localRows);
+      return;
+    }
+
+    if (typeof SHEETS_API_URL !== 'undefined' && SHEETS_API_URL && SHEETS_API_URL !== 'TU_URL_AQUI') {
+      fetch(SHEETS_API_URL + '?action=history&_=' + Date.now(), {
+        method:'GET',
+        cache:'no-store',
+        redirect:'follow'
+      })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => applyRows(normalizeHistoryRows(d)))
+      .catch(() => {});
+    }
+  }
+
+  function install(){
+    if (window.__JLMG_CARD_DAILY_FROM_HISTORY__) return;
+    window.__JLMG_CARD_DAILY_FROM_HISTORY__ = true;
+
+    const oldRenderResumen = window.renderResumen;
+    if (typeof oldRenderResumen === 'function') {
+      window.renderResumen = function(){
+        oldRenderResumen();
+        setTimeout(loadAndApply, 80);
+        setTimeout(loadAndApply, 800);
+      };
+    }
+
+    const oldRenderAll = window.renderAll;
+    if (typeof oldRenderAll === 'function') {
+      window.renderAll = function(){
+        oldRenderAll();
+        setTimeout(loadAndApply, 80);
+        setTimeout(loadAndApply, 800);
+      };
+    }
+
+    setTimeout(loadAndApply, 500);
+    setTimeout(loadAndApply, 1500);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
 })();
 </script>
 
